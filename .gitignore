@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+*.log
+*.pdf
+*.png
+*.docx
+*.xlsx
+*.rtf
+~$*
+class_proposals_compare/
+class_proposals_compare_v2/
+extracted_images/

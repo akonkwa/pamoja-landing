@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PAMOJA MVP</title>
+    <meta
+      name="description"
+      content="PAMOJA MVP for organizer imports, profile claims, event recommendations, and post-event debrief."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero-card">
+        <div>
+          <p class="eyebrow">Agentic event-social navigation</p>
+          <h1>PAMOJA MVP</h1>
+          <p class="hero-copy">
+            Run the whole core loop: create an event, import attendees, claim a Profile Agent,
+            ask who to meet, and write memory back after the event.
+          </p>
+        </div>
+        <div class="hero-metric">
+          <span class="metric-label">Success target</span>
+          <strong>3 useful recommendations in under 90 seconds</strong>
+        </div>
+      </header>
+
+      <main class="dashboard-grid">
+        <section class="panel">
+          <div class="section-title">
+            <p class="eyebrow">1. Organizer setup</p>
+            <h2>Create event</h2>
+          </div>
+          <form id="event-form" class="stack-form">
+            <label>
+              Community
+              <input name="communityName" type="text" placeholder="PAMOJA Fellows" value="PAMOJA Fellows" />
+            </label>
+            <label>
+              Event title
+              <input name="title" type="text" placeholder="Spring cohort dinner" required />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="3" placeholder="High-context founder dinner focused on pilots and partnerships."></textarea>
+            </label>
+            <div class="inline-fields">
+              <label>
+                Start time
+                <input name="startAt" type="datetime-local" />
+              </label>
+              <label>
+                Location
+                <input name="location" type="text" placeholder="Cambridge, MA" />
+              </label>
+            </div>
+            <label>
+              Tags
+              <input name="tags" type="text" placeholder="community, founders, pilots" />
+            </label>
+            <button class="button button-primary" type="submit">Create event</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="section-title">
+            <p class="eyebrow">2. Organizer import</p>
+            <h2>Upload attendee CSV</h2>
+          </div>
+          <div class="stack-form">
+            <label>
+              Target event
+              <select id="import-event-select"></select>
+            </label>
+            <label>
+              CSV rows
+              <textarea
+                id="csv-input"
+                rows="10"
+                spellcheck="false"
+                placeholder="name,email,affiliation,bio,interests,goals,looking_for,preferences"
+              ></textarea>
+            </label>
+            <div class="inline-actions">
+              <button id="load-sample-csv" class="button button-secondary" type="button">Load sample CSV</button>
+              <button id="import-csv" class="button button-primary" type="button">Import attendees</button>
+            </div>
+            <p class="help-text">
+              Expected headers: <code>name,email,affiliation,bio,interests,goals,looking_for,preferences</code>
+            </p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-title">
+            <p class="eyebrow">3. Claim flow</p>
+            <h2>Claim a Profile Agent</h2>
+          </div>
+          <form id="claim-form" class="stack-form">
+            <label>
+              Event
+              <select id="claim-event-select"></select>
+            </label>
+            <label>
+              Draft Profile Agent
+              <select id="claim-profile-select"></select>
+            </label>
+            <label>
+              Name
+              <input name="name" id="claim-name" type="text" />
+            </label>
+            <label>
+              Email
+              <input name="email" id="claim-email" type="email" />
+            </label>
+            <label>
+              Affiliation
+              <input name="affiliation" id="claim-affiliation" type="text" />
+            </label>
+            <label>
+              Bio
+              <textarea name="bio" id="claim-bio" rows="3"></textarea>
+            </label>
+            <label>
+              Interests
+              <input name="interestsText" id="claim-interests" type="text" placeholder="climate; pilots; operators" />
+            </label>
+            <label>
+              Goals
+              <input name="goalsText" id="claim-goals" type="text" placeholder="find pilot partners; meet operators" />
+            </label>
+            <label>
+              Looking for
+              <input name="lookingForText" id="claim-looking-for" type="text" placeholder="community builders; technical founders" />
+            </label>
+            <label>
+              Preferences
+              <input name="preferencesText" id="claim-preferences" type="text" placeholder="warm intros; practical builders" />
+            </label>
+            <label class="checkbox-row">
+              <input name="consentedMemory" id="claim-consent" type="checkbox" />
+              I consent to memory usage for better future recommendations.
+            </label>
+            <button class="button button-primary" type="submit">Claim profile</button>
+          </form>
+        </section>
+
+        <section class="panel emphasis-panel">
+          <div class="section-title">
+            <p class="eyebrow">4. Core query</p>
+            <h2>Who should I meet?</h2>
+          </div>
+          <form id="recommend-form" class="stack-form">
+            <label>
+              Event
+              <select id="recommend-event-select"></select>
+            </label>
+            <label>
+              Requester Profile Agent
+              <select id="recommend-profile-select"></select>
+            </label>
+            <button class="button button-primary" type="submit">Generate 3 recommendations</button>
+          </form>
+          <div id="recommendations" class="recommendation-list empty-state">
+            Recommendations will appear here after you query the Event Agent.
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-title">
+            <p class="eyebrow">5. Debrief</p>
+            <h2>Write memory back</h2>
+          </div>
+          <form id="debrief-form" class="stack-form">
+            <label>
+              Event
+              <select id="debrief-event-select"></select>
+            </label>
+            <label>
+              Your Profile Agent
+              <select id="debrief-profile-select"></select>
+            </label>
+            <fieldset class="checkbox-list">
+              <legend>Who did you meet?</legend>
+              <div id="met-people-options" class="checkbox-options"></div>
+            </fieldset>
+            <label>
+              Useful was it?
+              <input id="debrief-rating" name="usefulnessRating" type="range" min="1" max="5" value="4" />
+            </label>
+            <label>
+              Notes
+              <textarea id="debrief-notes" name="notes" rows="3" placeholder="What happened? What should the system remember next time?"></textarea>
+            </label>
+            <label class="checkbox-row">
+              <input id="debrief-follow-up" name="followUp" type="checkbox" />
+              Request follow-up reminder
+            </label>
+            <button class="button button-primary" type="submit">Save debrief</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="section-title">
+            <p class="eyebrow">Live system state</p>
+            <h2>Events and agents</h2>
+          </div>
+          <div id="event-cards" class="card-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="section-title">
+            <p class="eyebrow">Analytics</p>
+            <h2>Recent activity</h2>
+          </div>
+          <div id="analytics-list" class="analytics-list"></div>
+        </section>
+      </main>
+
+      <div id="toast" class="toast" hidden></div>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
