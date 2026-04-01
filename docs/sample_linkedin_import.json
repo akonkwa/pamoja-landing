@@ -1,0 +1,40 @@
+{
+  "profile": {
+    "name": "LinkedIn User",
+    "headline": "Operator building across networks",
+    "location": "Boston",
+    "currentFocus": ["network intelligence", "operators", "founders"]
+  },
+  "people": [
+    {
+      "name": "Maya Coleman",
+      "firstSeenYear": 2020,
+      "cluster": "Climate Operators",
+      "primaryRole": "Operator",
+      "organization": "CityBridge",
+      "geography": "Boston",
+      "topic": "climate systems",
+      "interactionFrequency": 0.82,
+      "messageHistory": 0.61,
+      "engagementOverlap": 0.74,
+      "mutualConnections": 11,
+      "recency": 0.9,
+      "sharedInstitutions": 1
+    },
+    {
+      "name": "Kwame Mensah",
+      "firstSeenYear": 2022,
+      "cluster": "Bridge Builders",
+      "primaryRole": "Ecosystem Builder",
+      "organization": "Open Commons",
+      "geography": "London",
+      "topic": "ecosystem partnerships",
+      "interactionFrequency": 0.72,
+      "messageHistory": 0.58,
+      "engagementOverlap": 0.65,
+      "mutualConnections": 16,
+      "recency": 0.81,
+      "sharedInstitutions": 2
+    }
+  ]
+}

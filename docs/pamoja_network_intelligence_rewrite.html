@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAMOJA - Agentic Network Intelligence</title>
+  <style>
+    :root {
+      --ink: #132238;
+      --muted: #526277;
+      --paper: #f4efe6;
+      --card: rgba(255, 255, 255, 0.78);
+      --line: rgba(19, 34, 56, 0.12);
+      --accent: #c75c2a;
+      --accent-2: #1e6b6f;
+      --accent-3: #d9a441;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(217, 164, 65, 0.18), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(30, 107, 111, 0.16), transparent 28%),
+        linear-gradient(180deg, #fbf8f2 0%, var(--paper) 100%);
+      padding: 32px;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      background: rgba(255, 252, 247, 0.88);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 60px rgba(33, 40, 52, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(199, 92, 42, 0.08), transparent 28%),
+        linear-gradient(300deg, rgba(30, 107, 111, 0.08), transparent 34%);
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      padding: 44px 44px 36px;
+    }
+
+    .kicker {
+      font-family: "Arial Narrow", Arial, sans-serif;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 52px;
+      letter-spacing: 0.04em;
+      line-height: 0.95;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 24px;
+      line-height: 1.2;
+      color: var(--accent);
+      max-width: 700px;
+    }
+
+    .intro {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .hero-card,
+    .signal-card,
+    .section,
+    .mvp-box,
+    .quote-box {
+      background: var(--card);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(19, 34, 56, 0.08);
+    }
+
+    .hero-card {
+      padding: 20px 22px;
+    }
+
+    .hero-card p {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    .signal-card {
+      padding: 18px 18px 16px;
+    }
+
+    .signal-card h2,
+    .section h2,
+    .mvp-box h2,
+    .quote-box h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-family: "Arial Narrow", Arial, sans-serif;
+    }
+
+    .signal-list {
+      display: grid;
+      gap: 10px;
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .signal-list strong {
+      color: var(--ink);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .section {
+      padding: 18px;
+      min-height: 250px;
+    }
+
+    .section p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .section .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-size: 20px;
+      color: white;
+    }
+
+    .past .icon { background: var(--accent); }
+    .present .icon { background: var(--accent-2); }
+    .future .icon { background: var(--accent-3); color: var(--ink); }
+
+    .mid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+
+    .quote-box {
+      padding: 20px 22px;
+    }
+
+    .quote {
+      font-size: 27px;
+      line-height: 1.24;
+      margin: 4px 0 0;
+      color: var(--ink);
+    }
+
+    .quote em {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    .mvp-box {
+      padding: 20px 22px;
+    }
+
+    .mvp-box p,
+    .mvp-box li,
+    .section li {
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    ul {
+      margin: 10px 0 0 18px;
+      padding: 0;
+    }
+
+    li + li {
+      margin-top: 7px;
+    }
+
+    .bottom {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .footer {
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--muted);
+      font-family: "Arial Narrow", Arial, sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .accent {
+      color: var(--accent);
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+
+      .page {
+        box-shadow: none;
+        border: none;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .intro,
+      .grid,
+      .mid,
+      .bottom,
+      .footer {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .content {
+        padding: 28px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="content">
+      <div class="kicker">PAMOJA / Concept Rewrite / March 2026</div>
+      <h1>PAMOJA</h1>
+      <div class="subtitle">Agentic network intelligence for understanding the past, navigating the present, and shaping the future.</div>
+
+      <div class="intro">
+        <div class="hero-card">
+          <p>
+            Pamoja is a personal relationship intelligence system that connects signals across LinkedIn, Instagram, Gmail, calendars, events, and other networked platforms to build a living picture of a user's social and professional world. Instead of leaving relationships scattered across apps, Pamoja creates a persistent agent that remembers, interprets, and recommends.
+          </p>
+        </div>
+        <div class="signal-card">
+          <h2>Core Questions</h2>
+          <div class="signal-list">
+            <div>
+              <strong>Past</strong>
+              What shaped my network over time?
+            </div>
+            <div>
+              <strong>Present</strong>
+              What is happening in my network right now?
+            </div>
+            <div>
+              <strong>Future</strong>
+              What should I do next, and who should I meet?
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="section past">
+          <div class="icon">P</div>
+          <h2>Past View</h2>
+          <p>
+            Pamoja reconstructs the history of a user's network by identifying major phases, institutions, roles, communities, and recurring themes. It highlights the people and moments that helped shape the current network and makes long-term patterns visible.
+          </p>
+        </div>
+        <div class="section present">
+          <div class="icon">N</div>
+          <h2>Present View</h2>
+          <p>
+            The system shows active relationships, weak ties worth revisiting, overlapping communities, and people aligned with current goals. It turns fragmented communication activity into an interpretable map of who matters now.
+          </p>
+        </div>
+        <div class="section future">
+          <div class="icon">F</div>
+          <h2>Future View</h2>
+          <p>
+            Pamoja recommends introductions, follow-ups, events, and strategic moves. It can identify two people who should meet, surface a timely dormant relationship, or suggest a conference that fits both the user's goals and their network pathways.
+          </p>
+        </div>
+      </div>
+
+      <div class="mid">
+        <div class="quote-box">
+          <h2>What Makes It Agentic</h2>
+          <div class="quote">
+            A normal app stores contact data. <em>Pamoja reasons across time</em>, keeps memory about relationships, and proposes actions based on patterns, relevance, and user goals.
+          </div>
+        </div>
+        <div class="mvp-box">
+          <h2>System Components</h2>
+          <ul>
+            <li>A persistent Personal Network Agent for each user</li>
+            <li>Source connectors for LinkedIn, Instagram, Gmail, calendars, and events</li>
+            <li>A memory layer for entities, timelines, themes, and relationship history</li>
+            <li>A recommendation layer for intros, follow-ups, and opportunity discovery</li>
+            <li>A visualization layer for past, present, and future views</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom">
+        <div class="mvp-box">
+          <h2>Initial MVP Focus</h2>
+          <p>
+            The first version should be deliberately narrow: a user-authorized LinkedIn analysis experience that creates a visual representation of the user's past network.
+          </p>
+          <ul>
+            <li>Connect LinkedIn through a secure, consent-based workflow</li>
+            <li>Retrieve permitted profile, role, education, and activity signals</li>
+            <li>Generate a timeline-based map of the user's network history</li>
+            <li>Highlight key institutions, transitions, clusters, and bridges</li>
+          </ul>
+        </div>
+        <div class="mvp-box">
+          <h2>Example Outputs</h2>
+          <ul>
+            <li>"These two contacts should meet because they work on adjacent problems in different communities."</li>
+            <li>"This relationship is dormant but highly relevant to your current direction."</li>
+            <li>"This conference fits your goals and overlaps strongly with your extended network."</li>
+            <li>"Your network has shifted from one domain to another, and here are the people who drove that change."</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Built around <span class="accent">consent, memory, and recommendations</span></div>
+        <div>From fragmented traces to relationship intelligence</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
