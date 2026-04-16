@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import store from "../../../../lib/store";
 import { createId, now } from "../../../../lib/store";
 import { generateReplyForProfile } from "../../../../lib/agent-runtime";
+import pamojaService from "../../../../lib/pamoja-service";
 import {
   consumeTelegramLinkToken,
   findTelegramConnection,
@@ -9,6 +10,54 @@ import {
 } from "../../../../lib/telegram";
 
 const { updateDbAsync } = store;
+const { recommendationsAction, simulateAgentIterationAction } = pamojaService;
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function buildHelpReply(profileName, eventTitle) {
+  return [
+    `You are linked to ${profileName}${eventTitle ? ` at ${eventTitle}` : ""}.`,
+    "Commands you can run:",
+    "/help - show commands and example prompts",
+    "/pair - pair only this agent to the strongest people in the current event",
+    "/advance - advance one day and run background pairing across the whole event",
+    "/status - summarize what your agent is focused on right now",
+    "Example prompts you can send:",
+    "- Who should I meet next?",
+    "- What happened today?",
+    "- What did my agent find?",
+    "- Summarize my top matches.",
+    "- What event should I focus on next?",
+  ].join("\n");
+}
+
+function parseTelegramIntent(text) {
+  const normalized = normalizeText(text).toLowerCase();
+
+  if (!normalized || normalized === "/start") {
+    return { type: "help" };
+  }
+
+  if (normalized === "/help" || normalized === "/commands" || normalized === "/prompts" || normalized === "help") {
+    return { type: "help" };
+  }
+
+  if (normalized === "/pair" || normalized.includes("run pairing") || normalized.includes("pair me")) {
+    return { type: "pair" };
+  }
+
+  if (normalized === "/advance" || normalized === "/advance_day" || normalized.includes("advance day")) {
+    return { type: "advance" };
+  }
+
+  if (normalized === "/status") {
+    return { type: "status" };
+  }
+
+  return { type: "chat" };
+}
 
 export async function POST(request) {
   const update = await request.json();
@@ -39,7 +88,10 @@ export async function POST(request) {
 
         await sendTelegramMessage(
           message.chat.id,
-          `Connected. You are now linked to ${user?.name || "your Pamoja agent"}. Ask me who to meet next, what happened today, or what your agent found.`
+          `Connected. You are now linked to ${user?.name || "your Pamoja agent"}.\n\n${buildHelpReply(
+            user?.name || "your Pamoja agent",
+            db.events.find((item) => item.id === profile?.eventId)?.title || ""
+          )}`
         );
         return db;
       }
@@ -71,14 +123,51 @@ export async function POST(request) {
         createdAt: now(),
       });
 
-      const { reply } = await generateReplyForProfile({
-        db,
-        profile,
-        question: message.text || "What should I know right now?",
-        memoryType: "telegram_chat",
-        source: "telegram",
-        provider: db.meta?.llmProvider,
-      });
+      const user = db.users.find((item) => item.id === profile.userId);
+      const event = db.events.find((item) => item.id === profile.eventId);
+      const intent = parseTelegramIntent(message.text);
+      let reply = "";
+
+      if (intent.type === "help") {
+        reply = buildHelpReply(user?.name || "your Pamoja agent", event?.title || "");
+      } else if (intent.type === "pair") {
+        const pairing = await recommendationsAction(db, {
+          eventId: profile.eventId,
+          profileAgentId: profile.id,
+          query: "Telegram-triggered agent pairing",
+        });
+        reply = [
+          `I just ran pairing for ${user?.name || "this agent"} inside ${event?.title || "the current event"}.`,
+          pairing.narrative,
+          `Top matches:\n${(pairing.recommendations || [])
+            .map((item) => `#${item.rank} ${item.name} - ${item.reason}`)
+            .join("\n")}`,
+          "The web graph should pick this up as soon as the dashboard refreshes.",
+        ].join("\n\n");
+      } else if (intent.type === "advance") {
+        const simulation = await simulateAgentIterationAction(db, {
+          eventId: profile.eventId,
+          profileAgentId: profile.id,
+        });
+        reply = [
+          `I advanced the universe to Day ${simulation.digest?.iteration || db.meta?.simulationDay || 0}.`,
+          simulation.digest?.summary || "Background work completed.",
+          `Background sweep ran across ${simulation.sweepAgentCount || 0} agents in ${event?.title || "this event"}.`,
+        ].join("\n\n");
+      } else {
+        const response = await generateReplyForProfile({
+          db,
+          profile,
+          question:
+            intent.type === "status"
+              ? "What should I know right now about my focus, strongest matches, and event context?"
+              : message.text || "What should I know right now?",
+          memoryType: "telegram_chat",
+          source: "telegram",
+          provider: db.meta?.llmProvider,
+        });
+        reply = response.reply;
+      }
 
       db.telegramMessages.push({
         id: createId("telegram_message"),

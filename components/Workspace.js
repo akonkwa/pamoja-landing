@@ -512,6 +512,29 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
     return nextDashboard;
   }
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function pollDashboard() {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      try {
+        const nextDashboard = await api.callJson("/api/dashboard");
+        if (!cancelled) {
+          setDashboard(nextDashboard);
+        }
+      } catch (error) {}
+    }
+
+    const intervalId = setInterval(pollDashboard, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [api, setDashboard]);
+
   async function switchLlmProvider(provider) {
     setBusy("llm-provider");
     setLocalError("");
