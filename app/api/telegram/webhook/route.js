@@ -3,6 +3,7 @@ import store from "../../../../lib/store";
 import { createId, now } from "../../../../lib/store";
 import { generateReplyForProfile } from "../../../../lib/agent-runtime";
 import pamojaService from "../../../../lib/pamoja-service";
+import { callLanguageModelDetailed } from "../../../../lib/openai";
 import {
   consumeTelegramLinkToken,
   findTelegramConnection,
@@ -57,6 +58,54 @@ function parseTelegramIntent(text) {
   }
 
   return { type: "chat" };
+}
+
+function parseTaggedIntent(text) {
+  const line = String(text || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith("INTENT:"));
+
+  const intent = line ? line.replace("INTENT:", "").trim().toLowerCase() : "";
+  if (["help", "pair", "advance", "status", "chat"].includes(intent)) {
+    return intent;
+  }
+  return "chat";
+}
+
+async function routeTelegramIntentWithModel({
+  text,
+  profileName,
+  eventTitle,
+  provider,
+}) {
+  const result = await callLanguageModelDetailed({
+    systemPrompt:
+      "You are an intent router for a Telegram networking agent. Classify the user's message into exactly one action. Choose HELP if they want commands, capabilities, prompts, or examples. Choose PAIR if they want matches or pairings for the connected agent only. Choose ADVANCE if they want background work, a day advance, a sweep across the event, or all agents processed. Choose STATUS if they want a summary of focus, findings, or current state. Choose CHAT for everything else.",
+    userPrompt: [
+      "Return exactly one line in this format:",
+      "INTENT: HELP or PAIR or ADVANCE or STATUS or CHAT",
+      "",
+      `Connected profile: ${profileName || "n/a"}`,
+      `Current event: ${eventTitle || "n/a"}`,
+      `Telegram message: ${text || ""}`,
+    ].join("\n"),
+    maxOutputTokens: 24,
+    provider,
+  });
+
+  const mapped = {
+    help: "help",
+    pair: "pair",
+    advance: "advance",
+    status: "status",
+    chat: "chat",
+  };
+
+  return {
+    type: mapped[parseTaggedIntent(result.text)] || "chat",
+    source: result.ok ? "llm" : "rules",
+  };
 }
 
 export async function POST(request) {
@@ -125,7 +174,15 @@ export async function POST(request) {
 
       const user = db.users.find((item) => item.id === profile.userId);
       const event = db.events.find((item) => item.id === profile.eventId);
-      const intent = parseTelegramIntent(message.text);
+      let intent = parseTelegramIntent(message.text);
+      if (intent.type === "chat") {
+        intent = await routeTelegramIntentWithModel({
+          text: message.text,
+          profileName: user?.name || "",
+          eventTitle: event?.title || "",
+          provider: db.meta?.llmProvider,
+        }).catch(() => intent);
+      }
       let reply = "";
 
       if (intent.type === "help") {
