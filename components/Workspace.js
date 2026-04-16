@@ -364,6 +364,10 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
 
   const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
   const selectedProfile = eventProfiles.find((agent) => agent.id === selectedProfileId) || null;
+  useEffect(() => {
+    setTelegramLink(null);
+  }, [selectedProfileId]);
+
   const selectedTelegramConnection = useMemo(
     () =>
       (dashboard?.telegramConnections || []).find(
@@ -719,6 +723,9 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
       setAgentReplyMeta({
         source: payload.source || (payload.mode === "create" ? "app" : "fallback"),
         confidence: payload.confidence || null,
+        provider: payload.provider || null,
+        failedOver: Boolean(payload.failedOver),
+        attemptedProviders: payload.attemptedProviders || [],
         toolNames: payload.toolNames || [],
       });
       await refreshUniverse();
@@ -907,6 +914,14 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
                             {agentReplyMeta.confidence.toUpperCase()} CONFIDENCE
                           </span>
                         ) : null}
+                        {agentReplyMeta.provider ? (
+                          <span className="agent-meta-pill">
+                            {agentReplyMeta.provider.toUpperCase()}
+                          </span>
+                        ) : null}
+                        {agentReplyMeta.failedOver ? (
+                          <span className="agent-meta-pill">FAILOVER USED</span>
+                        ) : null}
                         {(agentReplyMeta.toolNames || []).map((toolName) => (
                           <span key={toolName} className="agent-meta-pill">
                             {toolName}
@@ -1030,7 +1045,11 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
                     </div>
                     {telegramLink?.deepLink ? (
                       <>
-                        <p>Reconnect by opening this bot deep link:</p>
+                        <p>
+                          Reconnect by opening this fresh one-time bot link for{" "}
+                          {selectedProfile ? labelForProfile(selectedProfile, usersById) : "this profile"}{" "}
+                          before {formatDate(telegramLink.expiresAt)}:
+                        </p>
                         <p className="highlight-paragraph">{telegramLink.deepLink}</p>
                       </>
                     ) : null}

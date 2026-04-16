@@ -468,6 +468,9 @@ export async function POST(request) {
         reply: answer.reply,
         source: answer.source,
         confidence: answer.confidence,
+        provider: answer.provider || null,
+        failedOver: Boolean(answer.failedOver),
+        attemptedProviders: (answer.attempts || []).map((item) => item.provider).filter(Boolean),
         toolNames: ["query_profiles", "query_events", "query_memory", "query_recommendations"],
         profileAgentId: profile?.id || null,
       };

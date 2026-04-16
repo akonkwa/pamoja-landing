@@ -14,12 +14,15 @@ export async function POST(request) {
       if (!profile) {
         throw new Error("Profile Agent not found.");
       }
+      const user = db.users.find((item) => item.id === profile.userId);
 
       const token = createTelegramLinkToken(db, profile.id);
       const botUsername = getTelegramBotUsername();
       payload = {
         token: token.token,
         expiresAt: token.expiresAt,
+        profileAgentId: profile.id,
+        profileName: user?.name || "Selected profile",
         botUsername,
         deepLink: botUsername ? `https://t.me/${botUsername}?start=${token.token}` : "",
       };
