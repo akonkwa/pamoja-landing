@@ -279,12 +279,19 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
   const [latestDigest, setLatestDigest] = useState(null);
   const [agentPrompt, setAgentPrompt] = useState(initialAgentPrompt);
   const [agentReply, setAgentReply] = useState("");
+  const [agentReplyMeta, setAgentReplyMeta] = useState(null);
+  const [telegramStatus, setTelegramStatus] = useState(null);
+  const [telegramLink, setTelegramLink] = useState(null);
   const [busy, setBusy] = useState("");
   const [localError, setLocalError] = useState(error || "");
 
   useEffect(() => {
     setLocalError(error || "");
   }, [error]);
+
+  useEffect(() => {
+    api.callJson("/api/telegram/status").then(setTelegramStatus).catch(() => null);
+  }, [api]);
 
   const usersById = useMemo(
     () => new Map((dashboard?.users || []).map((user) => [user.id, user])),
@@ -293,7 +300,42 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
 
   const events = dashboard?.events || [];
   const profileAgents = dashboard?.profileAgents || [];
-  const recommendations = recommendationState?.recommendations || [];
+  const persistedRecommendations = useMemo(
+    () =>
+      (dashboard?.recommendations || [])
+        .filter(
+          (item) =>
+            item.eventId === selectedEventId &&
+            item.requesterProfileAgentId === selectedProfileId
+        )
+        .map((item) => {
+          const recommendedProfile =
+            profileAgents.find((agent) => agent.id === item.recommendedProfileAgentId) || null;
+          const recommendedUser = recommendedProfile
+            ? usersById.get(recommendedProfile.userId)
+            : null;
+
+          return {
+            id: item.id,
+            rank: item.rank,
+            score: item.score,
+            reason: item.reason,
+            profileAgentId: item.recommendedProfileAgentId,
+            recommendedProfileAgentId: item.recommendedProfileAgentId,
+            name: recommendedUser?.name || "Unknown agent",
+            affiliation: recommendedUser?.affiliation || "",
+            bio: recommendedProfile?.bio || "",
+          };
+        })
+        .sort((left, right) => left.rank - right.rank),
+    [dashboard, profileAgents, selectedEventId, selectedProfileId, usersById]
+  );
+  const recommendations =
+    recommendationState?.event?.id === selectedEventId &&
+    recommendationState?.requester?.id === selectedProfileId &&
+    recommendationState?.recommendations?.length
+      ? recommendationState.recommendations
+      : persistedRecommendations;
 
   useEffect(() => {
     if (!events.length) {
@@ -322,6 +364,13 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
 
   const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
   const selectedProfile = eventProfiles.find((agent) => agent.id === selectedProfileId) || null;
+  const selectedTelegramConnection = useMemo(
+    () =>
+      (dashboard?.telegramConnections || []).find(
+        (item) => item.profileAgentId === selectedProfileId
+      ) || null,
+    [dashboard, selectedProfileId]
+  );
   const latestDebrief = useMemo(
     () =>
       (dashboard?.debriefs || [])
@@ -482,6 +531,10 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
       const nextDashboard = await api.callJson("/api/dashboard/reset", { method: "POST" });
       setDashboard(nextDashboard);
       setRecommendationState(null);
+      setLatestDigest(null);
+      setAgentReply("");
+      setAgentReplyMeta(null);
+      setTelegramLink(null);
       setMetProfileIds([]);
     } catch (err) {
       setLocalError(err.message);
@@ -636,6 +689,7 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
       const payload = await api.callJson("/api/agent-simulations", {
         method: "POST",
         body: JSON.stringify({
+          eventId: selectedEventId,
           profileAgentId: selectedProfileId,
         }),
       });
@@ -650,11 +704,6 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
 
   async function askAgent(event) {
     event.preventDefault();
-    if (!selectedProfileId && !/\b(create|make|add|start)\b/i.test(agentPrompt)) {
-      setLocalError("Select a profile agent before prompting it.");
-      return;
-    }
-
     setBusy("agent-chat");
     setLocalError("");
     try {
@@ -667,11 +716,57 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
         }),
       });
       setAgentReply(payload.reply || "");
+      setAgentReplyMeta({
+        source: payload.source || (payload.mode === "create" ? "app" : "fallback"),
+        confidence: payload.confidence || null,
+        toolNames: payload.toolNames || [],
+      });
       await refreshUniverse();
       if (payload.mode === "create" && payload.profileAgent?.id) {
         setSelectedEventId(payload.eventId || selectedEventId);
         setSelectedProfileId(payload.profileAgent.id);
       }
+    } catch (err) {
+      setLocalError(err.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function connectTelegram() {
+    if (!selectedProfileId) {
+      setLocalError("Select a profile agent before connecting Telegram.");
+      return;
+    }
+
+    setBusy("telegram-connect");
+    setLocalError("");
+    try {
+      const payload = await api.callJson("/api/telegram/connect", {
+        method: "POST",
+        body: JSON.stringify({
+          profileAgentId: selectedProfileId,
+        }),
+      });
+      setTelegramLink(payload);
+      const nextStatus = await api.callJson("/api/telegram/status");
+      setTelegramStatus(nextStatus);
+    } catch (err) {
+      setLocalError(err.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function setupTelegramWebhook() {
+    setBusy("telegram-setup");
+    setLocalError("");
+    try {
+      await api.callJson("/api/telegram/setup", {
+        method: "POST",
+      });
+      const nextStatus = await api.callJson("/api/telegram/status");
+      setTelegramStatus(nextStatus);
     } catch (err) {
       setLocalError(err.message);
     } finally {
@@ -793,11 +888,32 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
                     <textarea
                       value={agentPrompt}
                       onChange={(event) => setAgentPrompt(event.target.value)}
-                      placeholder="Ask the selected agent a question, or say something like: Create the agent Amina Yusuf, her goals are climate partnerships..."
+                      placeholder="Ask anything about the full universe, or say something like: Create the agent Amina Yusuf, her goals are climate partnerships..."
                     />
                     <button disabled={busy === "agent-chat"} type="submit">
                       {busy === "agent-chat" ? "THINKING..." : "ASK / CREATE"}
                     </button>
+                    {agentReplyMeta ? (
+                      <div className="agent-reply-meta">
+                        <span className={`agent-source-pill ${agentReplyMeta.source || "fallback"}`}>
+                          {agentReplyMeta.source === "llm"
+                            ? "LLM"
+                            : agentReplyMeta.source === "app"
+                              ? "APP ACTION"
+                              : "FALLBACK"}
+                        </span>
+                        {agentReplyMeta.confidence ? (
+                          <span className="agent-meta-pill">
+                            {agentReplyMeta.confidence.toUpperCase()} CONFIDENCE
+                          </span>
+                        ) : null}
+                        {(agentReplyMeta.toolNames || []).map((toolName) => (
+                          <span key={toolName} className="agent-meta-pill">
+                            {toolName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {agentReply ? <p className="highlight-paragraph">{agentReply}</p> : null}
                   </form>
 
@@ -861,6 +977,63 @@ export default function Workspace({ dashboard, setDashboard, api, error }) {
                     ) : (
                       <p>No profile selected.</p>
                     )}
+                  </div>
+
+                  <div className="story-card">
+                    <h3>Telegram Link</h3>
+                    <p>
+                      {telegramStatus?.enabled
+                        ? `Bot @${telegramStatus.username} is configured.`
+                        : "Telegram bot is not configured in this environment."}
+                    </p>
+                    {selectedTelegramConnection ? (
+                      <p>
+                        Connected to Telegram user{" "}
+                        {selectedTelegramConnection.username
+                          ? `@${selectedTelegramConnection.username}`
+                          : selectedTelegramConnection.firstName || selectedTelegramConnection.telegramUserId}
+                        .
+                      </p>
+                    ) : (
+                      <p>No Telegram account linked to this profile yet.</p>
+                    )}
+                    {telegramStatus?.webhookInfo?.url ? (
+                      <p>
+                        Webhook:{" "}
+                        {telegramStatus.webhookInfo.url === telegramStatus.expectedWebhook
+                          ? "configured"
+                          : "needs refresh"}
+                      </p>
+                    ) : (
+                      <p>Webhook is not registered yet.</p>
+                    )}
+                    {telegramStatus?.webhookInfo?.last_error_message ? (
+                      <p>Last webhook error: {telegramStatus.webhookInfo.last_error_message}</p>
+                    ) : null}
+                    <div className="chip-row">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={!selectedProfileId || busy === "telegram-connect"}
+                        onClick={connectTelegram}
+                      >
+                        {busy === "telegram-connect" ? "GENERATING..." : "CONNECT TELEGRAM"}
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={!telegramStatus?.enabled || busy === "telegram-setup"}
+                        onClick={setupTelegramWebhook}
+                      >
+                        {busy === "telegram-setup" ? "SETTING UP..." : "REPAIR WEBHOOK"}
+                      </button>
+                    </div>
+                    {telegramLink?.deepLink ? (
+                      <>
+                        <p>Reconnect by opening this bot deep link:</p>
+                        <p className="highlight-paragraph">{telegramLink.deepLink}</p>
+                      </>
+                    ) : null}
                   </div>
 
                   <div className="story-card simulation-full-width">
