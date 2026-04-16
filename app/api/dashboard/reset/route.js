@@ -15,5 +15,9 @@ export async function POST(request) {
   }
 
   const db = resetDb();
-  return NextResponse.json(buildDashboardPayload(db));
+  return NextResponse.json(buildDashboardPayload(db), {
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
 }
