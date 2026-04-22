@@ -33,7 +33,9 @@ Requirements:
 - Node.js 22+
 - npm
 
-Install and run:
+### Fastest local demo path
+
+If you just want the seeded demo universe locally:
 
 ```bash
 npm install
@@ -45,6 +47,20 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+What you should expect on first load:
+- the neon workspace should open automatically
+- the seeded universe should include `PAMOJA Universe Preview`
+- the app should show `30 people`
+- the event and profile dropdowns should populate automatically
+
+If you see `0 people` or an empty graph:
+
+1. hard refresh the page
+2. click `Reset Universe`
+3. reload `http://localhost:3000`
+
+The app now fetches dashboard state with `no-store`, so the seeded demo universe should reload correctly after refresh/reset.
 
 ## Environment Variables
 
@@ -71,9 +87,23 @@ LINKEDIN_SCOPE=openid profile email
 ```
 
 Notes:
+- No model keys are required to boot the local demo UI and seeded universe.
+- If no model keys are configured, AI responses will be limited or fall back.
 - Model routing prefers the active provider and can fail over if one provider is unavailable.
 - Telegram features require the bot token and username.
 - LinkedIn configuration is optional and only needed if you are using the LinkedIn auth flow.
+
+### Minimum working local setup
+
+For classmates, the minimum local setup is:
+
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+That is enough to run the seeded local demo app even without Telegram, LinkedIn, OpenAI, or OpenRouter configured.
 
 ## Usage
 
@@ -148,8 +178,17 @@ Run:
 
 ```bash
 npm test
+```
+
+Optional:
+
+```bash
 npm run build
 ```
+
+Note:
+- In a messy local workspace with unrelated experimental files, `npm run build` can fail for reasons outside the core app.
+- For class/demo use, `npm run dev` is the primary local run path.
 
 ## Current Limitations
 

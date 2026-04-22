@@ -6,6 +6,7 @@ import Workspace from "./Workspace";
 async function callJson(url, options = {}) {
   const response = await fetch(url, {
     ...options,
+    cache: options.cache || "no-store",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -19,19 +20,15 @@ async function callJson(url, options = {}) {
 }
 
 export default function AppShell() {
-  const [session, setSession] = useState(null);
-  const [network, setNetwork] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [dashboard, setDashboard] = useState(null);
   const [error, setError] = useState("");
-  const [oauthMessage, setOauthMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  async function refreshSession() {
+  async function refreshDashboard() {
     setLoading(true);
     try {
-      const nextSession = await callJson("/api/auth/session");
-      setSession(nextSession);
-      const state = await callJson("/api/network").catch(() => null);
-      setNetwork(state);
+      const nextDashboard = await callJson("/api/dashboard");
+      setDashboard(nextDashboard);
       setError("");
     } catch (err) {
       setError(err.message);
@@ -41,38 +38,21 @@ export default function AppShell() {
   }
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const connected = params.get("linkedin_connected");
-    const linkedinError = params.get("linkedin_error");
-    if (connected) {
-      setOauthMessage("LinkedIn authorization returned to PAMOJA. Refresh diagnostics to load the captured connection state.");
-    }
-    if (linkedinError) {
-      setError(decodeURIComponent(linkedinError));
-    }
-    refreshSession();
+    refreshDashboard();
   }, []);
 
   const api = useMemo(
     () => ({
       callJson,
-      refreshSession,
-      setNetwork,
+      refreshDashboard,
+      setDashboard,
     }),
     []
   );
 
-  if (loading) {
-    return <div className="shell-loading">BOOTING PAMOJA...</div>;
+  if (loading && !dashboard) {
+    return <div className="shell-loading">BOOTING UMOJA UNIVERSE...</div>;
   }
 
-  return (
-    <Workspace
-      session={session || { authenticated: false, provider: null, username: "guest" }}
-      network={network}
-      setNetwork={setNetwork}
-      error={oauthMessage || error}
-      api={api}
-    />
-  );
+  return <Workspace dashboard={dashboard} setDashboard={setDashboard} api={api} error={error} />;
 }
