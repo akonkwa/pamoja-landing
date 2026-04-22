@@ -1,120 +1,133 @@
-# PAMOJA MVP
+# Umoja Agentic Social Universe
 
-Local-first LinkedIn network intelligence MVP built as a full-stack Next.js app.
+Umoja is an event-centered social intelligence app where every profile is an agent and every event is an agent. It combines a neon pixel-art network graph, AI-assisted prompting, agent-to-agent pairing, Telegram-linked profile agents, and a lightweight event simulation loop.
 
-## What it does
+Live app:
+- [https://pamoja-app-production.up.railway.app](https://pamoja-app-production.up.railway.app)
 
-- Demo mode with a realistic synthetic founder/operator/investor network
-- Direct LinkedIn OAuth connection boundary with encrypted local token storage
-- User-consented LinkedIn JSON import boundary
-- Encrypted local storage for imported payloads and derived network state
-- Fast pseudo-3D graph canvas focused on people over time
-- Auto-generated story pane for hidden clusters and bridge people
-- Conversational insight panel with persistent memory
-- Retrieval vault and verbose system console for inspecting what was actually captured
+Documentation:
+- [https://pamoja-app-production.up.railway.app/docs](https://pamoja-app-production.up.railway.app/docs)
 
-## Local run
+## Core Features
+
+- 30 seeded demo agents across founder, operator, and explorer clusters
+- Event agents that represent `has attended`, `attending`, and `will attend` relationships
+- Agent-specific pairing with visible graph links
+- Background simulation via `Advance Day`
+- AI-backed prompt box with retrieval over profiles, events, memory, and recommendations
+- Telegram bot connection for profile agents
+- OpenRouter to OpenAI failover for model calls
+
+## Tech Stack
+
+- Next.js App Router
+- React
+- Local JSON persistence in `data/db.json`
+- Railway for deployment
+- Telegram Bot API
+- OpenAI / OpenRouter for model responses
+
+## Local Setup
+
+Requirements:
+- Node.js 22+
+- npm
+
+Install and run:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open:
 
-## Easiest way to run
-
-From Terminal:
-
-```bash
-cd /Users/akonkwamubagwa/Documents/Playground
-npm run pamoja
+```text
+http://localhost:3000
 ```
 
-Or double-click:
+## Environment Variables
 
-[run-pamoja.command](/Users/akonkwamubagwa/Documents/Playground/run-pamoja.command)
+Copy `.env.example` to `.env.local` and set what you need.
 
-That script:
-- goes to the right folder
-- clears the Next cache
-- installs packages if needed
-- starts the app
-
-For optional AI and LinkedIn OAuth config, copy `.env.example` to `.env.local` and fill in the values you have available.
-
-## Direct LinkedIn OAuth
-
-This app now supports direct LinkedIn OAuth as the primary safe official connection path.
-The current product direction is:
-
-- use direct provider OAuth to connect LinkedIn safely
-- store the resulting access token only in encrypted local server-side storage
-- use provider-approved profile/session data where available
-- use user-provided exports or JSON imports for deeper historical/network analysis
-- avoid scraping and unofficial automation
-
-Set these in `.env.local`:
+Common variables:
 
 ```bash
+APP_BASE_URL=http://localhost:3000
+
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4.1-mini
+
+OPENROUTER_API_KEY=...
+OPENROUTER_MODEL=openrouter/free
+
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_BOT_USERNAME=pamoja_agent_bot
+
 LINKEDIN_CLIENT_ID=...
 LINKEDIN_CLIENT_SECRET=...
-LINKEDIN_REDIRECT_URI=http://127.0.0.1:3000/api/linkedin/official/callback
+LINKEDIN_REDIRECT_URI=...
 LINKEDIN_SCOPE=openid profile email
 ```
 
-Then in LinkedIn Developer settings:
+Notes:
+- Model routing prefers the active provider and can fail over if one provider is unavailable.
+- Telegram features require the bot token and username.
+- LinkedIn configuration is optional and only needed if you are using the LinkedIn auth flow.
 
-1. Create or use a LinkedIn developer app.
-2. Add `http://127.0.0.1:3000/api/linkedin/official/callback` as an authorized redirect URI.
-3. Copy the LinkedIn client ID and client secret into `.env.local`.
+## Usage
 
-After that, use the direct LinkedIn connection button inside the app.
+Suggested demo flow:
 
-## First launch flow
+1. Open the app and select `PAMOJA Universe Preview`.
+2. Choose a profile agent from the right panel.
+3. Click `Run Pairing` to pair only that selected agent.
+4. Ask questions in the prompt box about matches, memory, or event context.
+5. Use `Advance Day` to simulate broader background work across the event.
+6. Optionally connect the selected profile to Telegram and use `/help`, `/pair`, `/advance`, or natural-language prompts.
 
-1. Open the app directly.
-2. Choose `Load Demo Mode` for the full seeded experience, or paste your own JSON import.
-3. Optionally connect LinkedIn directly through provider OAuth for safe identity/session retrieval.
-4. Explore the graph, adjust relationship weights, and ask the insight agent about hidden clusters or bridge people.
+## Architecture
 
-## Import format
+High-level flow:
 
-A sample assisted-import payload lives at [docs/sample_linkedin_import.json](/Users/akonkwamubagwa/Documents/Playground/docs/sample_linkedin_import.json).
+1. The UI loads dashboard state from `/api/dashboard`.
+2. Actions such as pairing, debriefing, simulation, and Telegram connection mutate local app state through API routes.
+3. Recommendation state is stored in `db.recommendations`.
+4. Agent replies are generated from profile state plus retrieved memory, event, and recommendation context.
+5. Telegram messages hit `/api/telegram/webhook`, which can trigger pairing, status, help, and simulation actions.
 
-Minimum shape:
+Key folders:
 
-```json
-{
-  "profile": { "name": "LinkedIn User" },
-  "people": [
-    {
-      "name": "Contact Name",
-      "firstSeenYear": 2023,
-      "cluster": "Imported Cluster",
-      "organization": "Organization Name"
-    }
-  ]
-}
-```
+- `app/`: Next.js routes and API endpoints
+- `components/`: UI and graph workspace
+- `lib/`: app logic, recommendations, Telegram, model routing, storage
+- `data/`: local persisted state
+- `public/`: static assets and alternate prototypes
 
-## Evaluation
+## Testing
+
+Run:
 
 ```bash
 npm test
-npm run evaluate
+npm run build
 ```
 
-`npm run evaluate` runs the test suite and a production build.
+## Current Limitations
 
-## LinkedIn note
+- Persistence is still local-file based, not production database backed
+- The seeded demo universe is intentionally synthetic
+- Telegram behavior depends on Railway deploy health and webhook health
+- The app includes legacy and experimental files in the broader workspace
+- LinkedIn integration is partial and should be treated as optional
+- Autonomous behavior is still guided workflows plus model calls, not fully independent long-running agents
 
-This MVP now supports a safer LinkedIn strategy:
+## Submission Links
 
-- direct LinkedIn OAuth with encrypted local token storage
-- user-consented assisted import for first-party history/network data
-- no raw credential scraping
-- no background automation
-- no promise of full LinkedIn graph access through official provider login alone
+- Public repo: [https://github.com/akonkwa/pamoja-landing](https://github.com/akonkwa/pamoja-landing)
+- Live app: [https://pamoja-app-production.up.railway.app](https://pamoja-app-production.up.railway.app)
+- Documentation page: [https://pamoja-app-production.up.railway.app/docs](https://pamoja-app-production.up.railway.app/docs)
 
-For the full rationale, see [docs/linkedin_safe_strategy.md](/Users/akonkwamubagwa/Documents/Playground/docs/linkedin_safe_strategy.md).
+## Optional White Paper
+
+Not included by default. If needed, pair the submission with a short concept note or one-pager from the `docs/` folder.
