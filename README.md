@@ -104,6 +104,44 @@ Key folders:
 - `data/`: local persisted state
 - `public/`: static assets and alternate prototypes
 
+## Design Rationale
+
+This project intentionally prioritizes demoability, conceptual clarity, and end-to-end interaction over infrastructure complexity.
+
+Main architectural choices:
+
+- `Next.js App Router` was chosen so the UI, API routes, and deployment path all live in one codebase.
+- `Local JSON persistence` was chosen to keep setup friction extremely low for a class demo and to make state inspection easy.
+- `Event-first graph design` was chosen so relationships are mediated by attendance context instead of trying to build a generic social network.
+- `Prompt + retrieval + action pattern` was chosen instead of a fully autonomous agent runtime so the system remains inspectable and predictable during demos.
+- `Telegram as a thin interface` was chosen to extend the same agent system into messaging without creating a separate backend product.
+
+## Strengths Of The Design
+
+- The product concept is easy to demonstrate because graph state, pairing state, prompts, and simulation all live in one visible surface.
+- The architecture is modular enough that recommendation logic, model routing, Telegram behavior, and storage can evolve independently.
+- The event-centric model is a strong design constraint because it avoids becoming a vague all-purpose network app.
+- The local persistence layer makes the app easy to run, reset, inspect, and explain in a classroom setting.
+- The failover model routing improves resilience and makes the AI layer feel more reliable during demos.
+
+## Weaknesses And Tradeoffs
+
+- Local JSON storage is simple but not robust for concurrency, multi-user collaboration, or production durability.
+- The current repo contains legacy and experimental work, which weakens repository cleanliness even though the core app works.
+- The agent system is still closer to guided agent workflows than to a true long-running autonomous multi-agent architecture.
+- Telegram and model behavior depend on external services, so demo reliability can still be affected by webhook or provider availability.
+- The seeded universe is synthetic, which is great for demos but limits how much product validity can be inferred from usage.
+
+## Future Architecture Path
+
+If this moved beyond demo stage, the next upgrades would be:
+
+- move persistence from `data/db.json` to Postgres
+- separate seeded demo data from live user state
+- add explicit event sourcing or action logs for reproducibility
+- formalize agent tools instead of mixing routing logic inside API handlers
+- improve repo separation so `Umoja` and experimental side projects are not mixed into one broad workspace
+
 ## Testing
 
 Run:
